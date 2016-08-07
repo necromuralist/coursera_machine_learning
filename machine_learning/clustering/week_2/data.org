@@ -1,0 +1,12 @@
+* wiki
+** a dataset of wikipedia pages about famous people
+** columns
+*** ID: index of row
+*** URI: address of page
+*** name: full name of person
+*** text: description of person
+*** tf_idf: term-frequency inverse document frequency value for the text
+* corpus
+  - sparse matrix of OneHotEncoder values for a word
+  - each row is a document
+  - each column is a word

@@ -1,0 +1,10 @@
+Clustering
+==========
+<<name='imports', echo=False>>=
+# this package
+from commoncode.index_builder import create_toctree
+@
+
+<<name='toctree', echo=False, results='sphinx', wrap=False>>=
+create_toctree()
+@

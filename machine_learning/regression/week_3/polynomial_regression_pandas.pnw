@@ -1,0 +1,243 @@
+Assessing Fit (polynomial regression with pandas)
+=================================================
+
+This is a re-do of the regular assignment using pandas and statsmodels. The code is in the assignment too, but hopefully I can clarify what happened by pulling this out into its own file.
+
+The point of this unit is to use a validation set to find the best model. In this case this is illustrated using polynomial regression.
+
+<<name='imports'>>=
+# python standard library
+from collections import namedtuple
+
+# third-party
+import matplotlib.pyplot as plt
+from matplotlib import pylab
+import numpy
+import pandas
+import seaborn
+from sklearn.cross_validation import train_test_split
+import statsmodels.api as statsmodels
+
+# this code
+from regression_model import FrameRegressionModel
+@
+
+<<name='constants'>>=
+figure_prefix = "polynomial_regression_pandas_"
+@
+
+Loading the Data
+----------------
+
+<<name='load_data', wrap=False>>=
+sales_frame = pandas.read_csv('../../large_data/csvs/kc_house_data.csv')
+@
+
+In order for the line-graph to look correct, the x-axis data ('sqft_living') needs to be sorted.
+
+<<name='sort_data', wrap=False>>=
+sales_frame = sales_frame.sort_values(by='sqft_living')
+@
+
+
+Visualizing Polynomial Regression
+---------------------------------
+
+Degree 1 (Straight Line)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+<<name='model_frame_1', wrap=False>>=
+model_frame_1 = FrameRegressionModel(data=sales_frame)
+coefficients = model_frame_1.coefficients
+@
+
+<<name='model', echo=False, wrap=False, results='sphinx'>>=
+def print_model(coefficients):
+    print(".. math::")
+    print(r"   price &= {b:.2f} + {m:.2f}\times sqft\_living\\".format(b=coefficients.const,
+                                                                        m=coefficients.power_1))
+    return
+print_model(coefficients)
+@
+
+<<name='plot_frame_1', echo=False, results='Sphinx', fig=False, include=False>>=
+model_frame_1.plot_fit(figure_prefix + 'degree_1.png')
+@
+
+Degree 2 (Parabola)
+~~~~~~~~~~~~~~~~~~~
+
+<<name='model_2', wrap=False>>=
+model_frame_2 = FrameRegressionModel(data=sales_frame, degree=2)
+coefficients = model_frame_2.coefficients
+@
+
+<<name='model', echo=False, wrap=False, results='sphinx'>>=
+print_model(coefficients)
+@
+
+<<name='plot_2', echo=False, wrap=False, results='sphinx', fig=False, include=False>>=
+model_frame_2.plot_fit("degree_2.png")
+@
+
+Degree 3 (Cubic)
+~~~~~~~~~~~~~~~~
+
+<<name='model_3', wrap=False>>=
+model_frame_3 = FrameRegressionModel(data=sales_frame, degree=3)
+coefficients = model_frame_3.coefficients
+@
+
+<<name='print_model_3', echo=False, results='sphinx'>>=
+print_model(coefficients)
+@
+
+<<name='plot_model_3', echo=False, results='sphinx', fig=False, include=False>>=
+model_frame_3.plot_fit("degree_3.png")
+@
+
+This should look like an 'S'.
+
+15th Degree Polynomial
+~~~~~~~~~~~~~~~~~~~~~~
+
+<<name='model_15', wrap=False>>=
+model_frame_15 = FrameRegressionModel(data=sales_frame, degree=15)
+coefficients = model_frame_15.coefficients
+@
+
+<<name='print_model_15', echo=False, results='sphinx'>>=
+print_model(coefficients)
+@
+
+<<name='plot_model_15', echo=False, results='sphinx', fig=False, include=False>>=
+model_frame_15.plot_fit("plot_model_15.png")
+@
+
+Now you're starting to see the effects of overfitting.
+
+.. '
+
+
+Changing the data and re-learning
+---------------------------------
+
+The more parameters the model has, the more flexible it is, and also the more *variance* it has (generally speaking). So having a 16-term polynomial might show a lot of variance as the data-sets are changed. To see this effect, the original data is split up into 4 sets so we can compare the models that they produce.
+
+<<name='create_sets', wrap=False>>=
+train_frame, test_frame = train_test_split(sales_frame, train_size=.5, random_state=0)
+frame_1, frame_2 = train_test_split(train_frame, train_size=.5, random_state=0)
+frame_3, frame_4 = train_test_split(test_frame, train_size=.5, random_state=0)
+frame_list = [frame_1, frame_2, frame_3, frame_4]
+frames = {'frame_{0}'.format(index):frame_list[index] for index in range(len(frame_list))}
+@
+
+<<name='plot_sets', echo=False, results='sphinx', fig=False, include=False>>=
+file_prefix = 'plot_set_'
+for name in sorted(frames):
+    model = FrameRegressionModel(data=frames[name].sort_values(by='sqft_living'), degree=15)
+    model._version = "DataFrame, {0}".format(name)
+    model.plot_fit("{0}{1}.png".format(file_prefix, name))
+    print('')
+@
+
+
+Selecting a Polynomial Degree
+-----------------------------
+
+Whenever we have a "magic" parameter like the degree of the polynomial there is one well-known way to select these parameters -- use a validation set.
+
+We split the sales dataset 3-ways into *training set*, *test set*, and *validation set* as follows:
+
+ * Split our sales data into 2 sets: ``training_and_validation`` and ``testing``. Use a 90:10 split
+ * Further split our training data into two sets: ``training`` and ``validation``. Use a 50:50 split
+
+Set ``random_state=1`` to obtain consistent results for different users.
+
+Now try increasing numbers of polynomial terms and find the one with the lowest RSS.
+
+
+<<name='FramedRss'>>=
+FrameRss = namedtuple('FrameRss', 'rss train_model test_model predictions'.split())
+@
+
+<<name='frame_rss'>>=
+def frame_rss(training, testing, degree, model):
+    """
+    :param:
+     - `training`: SFrame data for training
+     - `testing`: SFrame for testing
+     - `degree`: Maximum degree for the polynomial data
+     - `model`: class definition RegressionModel or FrameRegressionModel
+    :return: RSS between prediction from training model and testing data
+    """
+    train_model = model(data=training, degree=degree)
+    test_model = model(data=testing, degree=degree)
+    predictions = train_model.predict(test_model.poly_data)
+    residuals = predictions - test_model.data['price']
+    return FrameRss(rss=(residuals**2).sum(), train_model=train_model,
+                    test_model=test_model, predictions=predictions)
+@
+
+
+<<name='plot_train_test', wrap=False>>=
+def plot_train_test(rss):
+    figure = plt.figure()
+    axe = figure.gca()
+    
+    lines = axe.plot(rss.train_model.poly_data['power_1'],
+                     rss.train_model.data['price'], '.', label='training Data')
+    lines = axe.plot(rss.test_model.poly_data['power_1'],
+                        rss.test_model.data['price'], '.', label='Test Data')
+    lines = axe.plot(rss.test_model.poly_data['power_1'], rss.predictions, '-',
+                     label='Test Predictions')
+    axe.legend()
+    axe.set_xlabel('Living Space (Sq Ft)')
+    axe.set_ylabel('Price ($)')
+    title = axe.set_title('Living Space vs Price')
+    file_path = figure_prefix + "best_rss.png"
+    figure.savefig(file_path)
+    print(".. image:: " + file_path)
+    return
+@
+
+<<name='train_validate_test_data', wrap=False>>=
+train_validate, test = train_test_split(sales_frame, train_size=0.9, random_state=1)
+train, validate = train_test_split(train_validate, train_size=0.5, random_state=1)
+
+train = train.sort_values(by='sqft_living')
+validate = validate.sort_values(by='sqft_living')
+test = test.sort_values(by='sqft_living')
+@
+
+<<name='get_rss'>>=
+frame_rss_s = []
+
+for degree in range(1, 16):
+    rss = frame_rss(train, validate, degree,
+                    FrameRegressionModel)
+    frame_rss_s.append(rss.rss)
+@
+
+<<name='find_min_rss'>>=
+frame_rss_s = numpy.array(frame_rss_s)
+min_rss = frame_rss_s.min()
+min_rss_index = frame_rss_s.argmin()
+min_rss_degree = min_rss_index + 1
+print("Min RSS: {0}".format(min_rss))
+print("Min RSS Index: {0}".format(min_rss_index))
+print("Min RSS Degree: {0}".format(min_rss_degree))
+@
+
+<<name='best_rss'>>=
+rss = frame_rss(train, test, min_rss_degree, FrameRegressionModel)
+print("{0:.5e}".format(rss.rss))
+@
+
+<<name='best_model', echo=False, results='sphinx'>>=
+print_model(rss.train_model.coefficients)
+@
+
+<<name='plot_best', echo=False, results='sphinx', include=False>>=
+plot_train_test(rss)
+@

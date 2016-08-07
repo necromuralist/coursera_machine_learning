@@ -1,0 +1,21 @@
+* Machine Learning
+* Foundations [/]
+ - [ ] Predicting Housing Prices
+ - [ ] Regression
+ - [ ] Product Sentiment
+ - [ ] Clustering
+ - [ ] Song Recommender
+ - [ ] Deep Learning   
+* Regression [/]
+ - [ ] Simple Linear Regression
+ - [ ] Multiple Regression
+ - [ ] Polynomial Regression
+ - [ ] Ridge Regression
+ - [ ] Lasso
+ - [ ] Local Regression
+* Classification [/]
+ - [ ] Linear Classifier
+ - [ ] Linear Classifier 2
+ - [ ] Decision Trees
+ - [ ] Decision Trees 2
+ - [ ] Boosting

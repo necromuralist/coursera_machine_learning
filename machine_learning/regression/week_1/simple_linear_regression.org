@@ -1,0 +1,36 @@
+* linear regression with SFrame [/]
+  - [ ] import libraries [/]
+    - [ ] graphlab
+    - [ ] matplotlib
+    - [ ] pandas
+    - [ ] seaborn
+  - [ ] load the data (../../../large_data/Philadelphia_Crime_Rate_noNA.csv)
+  - [ ] Explore the data
+  - [ ] fit the linear-regression model
+    - data = sales data
+    - target = 'HousePrice'
+    - features = 'CrimeRate'
+  - [ ] plot regression line
+  - [ ] Identify the outlier
+  - [ ] get the model coefficients
+  - [ ] Predict price based on new crime rate 
+   - (use first data point in sales)
+   - use outlier
+* Philly Crime [/]
+  - [ ] load libraries
+  - [ ] load data
+  - [ ] explore the data
+  - [ ] fit model
+    - target: 'HousePrice'
+    - features: 'CrimeRate'
+  - [ ] plot model
+  - [ ] remove Center City and redo
+  - [ ] Refit model to non Center City dataset
+  - [ ] plot non city center model
+  - [ ] compare coefficients for both models
+  - [ ] remove high-value outlier neighborhoods and redo
+  - [ ] compare coefficients
+    - [ ] differences in slopes
+    - [ ] plot
+* Simple Regression assignment [/]
+  - [ ] load libraries
